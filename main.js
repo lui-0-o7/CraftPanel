@@ -491,42 +491,66 @@ ipcMain.handle('servers:uploadWorld', async (_event, id) => {
   const targetPath = result[0];
   const stats = fs.statSync(targetPath);
 
-  // La carpeta de mundos en Bedrock suele estar dentro de `worlds/`
   const worldsDir = path.join(server.dir, 'worlds');
   fs.mkdirSync(worldsDir, { recursive: true });
 
   const worldName = 'Bedrock level';
   const worldDest = path.join(worldsDir, worldName);
 
-  if (stats.isDirectory()) {
-    // Copiar carpeta recursivamente
-    fs.rmSync(worldDest, { recursive: true, force: true });
-    fs.cpSync(targetPath, worldDest, { recursive: true });
-  } else {
-    // Es un archivo .zip o .mcworld
-    const ext = path.extname(targetPath).toLowerCase();
-    if (ext === '.zip' || ext === '.mcworld') {
-      const { extractZip } = require('./src/core/zip');
-      const tempExtractDir = path.join(server.dir, 'temp_world_extract');
-      fs.rmSync(tempExtractDir, { recursive: true, force: true });
-      fs.mkdirSync(tempExtractDir, { recursive: true });
-      await extractZip(targetPath, tempExtractDir);
-
-      // Buscar si dentro hay nivel de bedrock (tiene level.dat)
-      let foundLevelDir = tempExtractDir;
-      const entries = fs.readdirSync(tempExtractDir, { withFileTypes: true });
-      const hasLevelDat = entries.some(e => e.isFile() && e.name.toLowerCase() === 'level.dat');
-      if (!hasLevelDat && entries.length === 1 && entries[0].isDirectory()) {
-        foundLevelDir = path.join(tempExtractDir, entries[0].name);
-      }
-
+  try {
+    if (stats.isDirectory()) {
       fs.rmSync(worldDest, { recursive: true, force: true });
-      fs.mkdirSync(worldDest, { recursive: true });
-      fs.cpSync(foundLevelDir, worldDest, { recursive: true });
-      fs.rmSync(tempExtractDir, { recursive: true, force: true });
+      fs.cpSync(targetPath, worldDest, { recursive: true });
     } else {
-      throw new Error('Formato de archivo no válido. Debe ser una carpeta, un ZIP o un .mcworld');
+      const ext = path.extname(targetPath).toLowerCase();
+      if (ext === '.zip' || ext === '.mcworld') {
+        const { extractZip } = require('./src/core/zip');
+        const tempExtractDir = path.join(server.dir, 'temp_world_extract');
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+        fs.mkdirSync(tempExtractDir, { recursive: true });
+        await extractZip(targetPath, tempExtractDir);
+
+        // Buscar recursivamente un archivo level.dat
+        function findLevelDat(dir) {
+          const entries = fs.readdirSync(dir, { withFileTypes: true });
+          for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+              const found = findLevelDat(fullPath);
+              if (found) return found;
+            } else if (entry.isFile() && entry.name.toLowerCase() === 'level.dat') {
+              return dir;
+            }
+          }
+          return null;
+        }
+
+        const worldDir = findLevelDat(tempExtractDir);
+        if (worldDir) {
+          fs.rmSync(worldDest, { recursive: true, force: true });
+          fs.mkdirSync(worldDest, { recursive: true });
+          fs.cpSync(worldDir, worldDest, { recursive: true });
+        } else {
+          const entries = fs.readdirSync(tempExtractDir, { withFileTypes: true });
+          const dirs = entries.filter(e => e.isDirectory());
+          if (dirs.length === 1) {
+            fs.rmSync(worldDest, { recursive: true, force: true });
+            fs.mkdirSync(worldDest, { recursive: true });
+            fs.cpSync(path.join(tempExtractDir, dirs[0].name), worldDest, { recursive: true });
+          } else {
+            throw new Error('No se encontró un mundo válido en el archivo ZIP. Debe contener un archivo level.dat.');
+          }
+        }
+
+        fs.rmSync(tempExtractDir, { recursive: true, force: true });
+      } else {
+        throw new Error('Formato de archivo no válido. Debe ser una carpeta, un ZIP o un .mcworld');
+      }
     }
+  } catch (err) {
+    const tempExtractDir = path.join(server.dir, 'temp_world_extract');
+    fs.rmSync(tempExtractDir, { recursive: true, force: true }).catch(() => {});
+    throw err;
   }
 
   return true;
