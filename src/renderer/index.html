@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:; connect-src 'none';"
+    />
+    <title>CraftPanel</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">⛏</div>
+          <div class="brand-text">
+            <strong>CraftPanel</strong>
+            <span>Servidores Minecraft</span>
+          </div>
+        </div>
+
+        <button id="btn-new" class="btn btn-primary btn-block">＋ Nuevo servidor</button>
+
+        <div class="list-label">TUS SERVIDORES</div>
+        <div id="server-list" class="server-list"></div>
+
+        <div class="sidebar-footer">
+          <button id="btn-settings" class="btn btn-ghost btn-block">⚙ Ajustes</button>
+          <div id="app-version" class="version-line"></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section id="empty-state" class="empty-state">
+          <div class="empty-icon">⛏</div>
+          <h1>Tu servidor, en un par de clics</h1>
+          <p>
+            Crea un servidor de Minecraft <strong>Java</strong> (Paper, Vanilla o Fabric) o
+            <strong>Bedrock</strong> oficial. CraftPanel descarga el software, prepara la
+            configuración, abre el puerto y te deja administrarlo desde aquí.
+          </p>
+          <button class="btn btn-primary btn-lg" id="btn-new-empty">Crear mi primer servidor</button>
+          <div class="empty-features">
+            <div><span>⬇</span>Descarga automática</div>
+            <div><span>⌨</span>Consola en vivo</div>
+            <div><span>🌐</span>Puerto con UPnP</div>
+            <div><span>💾</span>Copias de seguridad</div>
+          </div>
+        </section>
+
+        <section id="server-view" class="server-view hidden">
+          <header class="server-header">
+            <div class="server-title">
+              <h1 id="srv-name">Servidor</h1>
+              <div class="meta-line">
+                <span id="srv-edition" class="badge">Java</span>
+                <span id="srv-software" class="badge">Paper</span>
+                <span id="srv-version" class="badge">1.21.8</span>
+                <span id="srv-uptime" class="meta-muted"></span>
+              </div>
+            </div>
+            <div class="server-controls">
+              <span id="srv-status" class="status-pill status-stopped">Detenido</span>
+              <button id="btn-start" class="btn btn-primary">▶ Iniciar</button>
+              <button id="btn-stop" class="btn btn-warn hidden">■ Detener</button>
+              <button id="btn-kill" class="btn btn-danger hidden">Forzar cierre</button>
+              <button id="btn-open-folder" class="btn btn-ghost" title="Abrir carpeta del servidor">📁</button>
+            </div>
+          </header>
+
+          <div class="address-bar">
+            <div class="address-item">
+              <span class="address-label">Red local</span>
+              <code id="addr-lan">—</code>
+              <button class="icon-btn" data-copy="addr-lan" title="Copiar">⧉</button>
+            </div>
+            <div class="address-item">
+              <span class="address-label">Puerto</span>
+              <code id="addr-port">—</code>
+              <button class="icon-btn" data-copy="addr-port" title="Copiar">⧉</button>
+            </div>
+            <div class="address-item" id="addr-public-wrap">
+              <span class="address-label">IP pública</span>
+              <code id="addr-public">—</code>
+              <button class="icon-btn" data-copy="addr-public" title="Copiar">⧉</button>
+            </div>
+            <button id="btn-goto-network" class="btn btn-ghost btn-sm">Configurar acceso →</button>
+          </div>
+
+          <nav class="tabs" id="tabs">
+            <button class="tab active" data-tab="console">Consola</button>
+            <button class="tab" data-tab="players">Jugadores <span id="player-count" class="tab-count hidden">0</span></button>
+            <button class="tab" data-tab="properties">Propiedades</button>
+            <button class="tab" data-tab="backups">Copias</button>
+            <button class="tab" data-tab="network">Red</button>
+            <button class="tab" data-tab="settings">Ajustes del servidor</button>
+          </nav>
+
+          <div class="tab-panels">
+            <!-- CONSOLA -->
+            <div class="panel active" data-panel="console">
+              <div class="console-toolbar">
+                <label class="check-inline"><input type="checkbox" id="autoscroll" checked /> Auto-scroll</label>
+                <div class="spacer"></div>
+                <button id="btn-clear-console" class="btn btn-ghost btn-sm">Limpiar</button>
+                <button id="btn-copy-console" class="btn btn-ghost btn-sm">Copiar todo</button>
+              </div>
+              <div id="console" class="console" aria-live="polite"></div>
+              <form id="console-form" class="console-form">
+                <span class="console-prompt">&gt;</span>
+                <input id="console-input" type="text" autocomplete="off" spellcheck="false" placeholder="Escribe un comando y pulsa Enter (help, list, op ...)" />
+                <button class="btn btn-primary btn-sm" type="submit">Enviar</button>
+              </form>
+            </div>
+
+            <!-- JUGADORES -->
+            <div class="panel" data-panel="players">
+              <div class="panel-head">
+                <div>
+                  <h2>Jugadores conectados</h2>
+                  <p class="hint">La lista se actualiza con los avisos del servidor y cada 20 segundos.</p>
+                </div>
+                <button id="btn-refresh-players" class="btn btn-ghost btn-sm">↻ Actualizar</button>
+              </div>
+              <div id="players-list" class="players-list"></div>
+            </div>
+
+            <!-- PROPIEDADES -->
+            <div class="panel" data-panel="properties">
+              <div class="panel-head">
+                <div>
+                  <h2>server.properties</h2>
+                  <p class="hint">Los cambios se aplican la próxima vez que inicies el servidor.</p>
+                </div>
+                <div class="row-actions">
+                  <button id="btn-props-raw" class="btn btn-ghost btn-sm">Editor de texto</button>
+                  <button id="btn-props-save" class="btn btn-primary btn-sm">Guardar cambios</button>
+                </div>
+              </div>
+              <div id="props-warning" class="notice hidden">El servidor está en ejecución. Deténlo para editar <code>server.properties</code>; si no, Minecraft sobrescribirá los cambios al apagarse.</div>
+              <div id="props-form" class="form-grid"></div>
+              <textarea id="props-raw" class="raw-editor hidden" spellcheck="false"></textarea>
+            </div>
+
+            <!-- COPIAS -->
+            <div class="panel" data-panel="backups">
+              <div class="panel-head">
+                <div>
+                  <h2>Copias de seguridad</h2>
+                  <p class="hint">Se guardan en la carpeta <code>backups</code> del servidor. Detén el servidor antes de crear o restaurar.</p>
+                </div>
+                <div class="row-actions">
+                  <button id="btn-backup-open" class="btn btn-ghost btn-sm">Abrir carpeta</button>
+                  <button id="btn-backup-create" class="btn btn-primary btn-sm">💾 Crear copia</button>
+                </div>
+              </div>
+              <div id="backup-progress" class="progress-inline hidden">
+                <div class="bar"><div id="backup-bar" class="bar-fill"></div></div>
+                <span id="backup-progress-text"></span>
+              </div>
+              <div id="backups-list" class="backups-list"></div>
+            </div>
+
+            <!-- RED -->
+            <div class="panel" data-panel="network">
+              <div class="panel-head">
+                <div>
+                  <h2>Acceso para tus amigos</h2>
+                  <p class="hint">La forma más sencilla es abrir el puerto en el router automáticamente (UPnP).</p>
+                </div>
+                <button id="btn-net-refresh" class="btn btn-ghost btn-sm">↻ Actualizar</button>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Dirección del servidor</h3>
+                  <span class="badge" id="net-edition-badge">Java</span>
+                </div>
+                <div class="address-grid">
+                  <div>
+                    <span class="address-label">Red local (misma WiFi)</span>
+                    <div class="copy-row"><code id="net-lan">—</code><button class="icon-btn" data-copy="net-lan">⧉</button></div>
+                  </div>
+                  <div>
+                    <span class="address-label">Internet (IP pública)</span>
+                    <div class="copy-row"><code id="net-public">—</code><button class="icon-btn" data-copy="net-public">⧉</button></div>
+                  </div>
+                </div>
+                <p class="hint" id="net-connect-hint"></p>
+                <div class="row-actions">
+                  <button id="btn-check-public" class="btn btn-ghost btn-sm">Comprobar desde Internet</button>
+                  <span id="public-check-result" class="hint"></span>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Abrir puerto automáticamente (UPnP)</h3>
+                  <span id="upnp-state" class="badge badge-muted">Sin comprobar</span>
+                </div>
+                <p class="hint">Pide al router que redirija el puerto TCP y UDP hacia este PC. Funciona en la mayoría de routers domésticos.</p>
+                <div class="row-actions">
+                  <button id="btn-upnp-open" class="btn btn-primary btn-sm">Abrir puerto en el router</button>
+                  <button id="btn-upnp-close" class="btn btn-ghost btn-sm">Cerrar puerto</button>
+                </div>
+                <div id="upnp-result" class="upnp-result hidden"></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Túnel Cloudflare (experimental)</h3>
+                  <span id="tunnel-state" class="badge badge-muted">Detenido</span>
+                </div>
+                <p class="hint" id="tunnel-help">
+                  Los túneles gratuitos de Cloudflare están pensados para HTTP. Para Minecraft, tus amigos
+                  deben instalar <strong>cloudflared</strong> y ejecutar el comando que aparece abajo; después
+                  se conectan a <code>127.0.0.1</code>. Si no funciona, usa UPnP o abre el puerto manualmente.
+                </p>
+                <div class="row-actions">
+                  <button id="btn-tunnel-start" class="btn btn-ghost btn-sm">Iniciar túnel</button>
+                  <button id="btn-tunnel-stop" class="btn btn-ghost btn-sm">Detener túnel</button>
+                </div>
+                <div id="tunnel-info" class="tunnel-info hidden">
+                  <div class="copy-row"><code id="tunnel-command"></code><button class="icon-btn" data-copy="tunnel-command">⧉</button></div>
+                  <p class="hint">Tus amigos ejecutan ese comando y en Minecraft ponen <code>127.0.0.1:25565</code>.</p>
+                </div>
+              </div>
+
+              <details class="card details">
+                <summary>¿Prefieres abrir el puerto a mano en el router?</summary>
+                <div class="details-body">
+                  <ol>
+                    <li>Entra en el panel de tu router (normalmente <code>192.168.1.1</code> o <code>192.168.0.1</code>).</li>
+                    <li>Busca <em>Port Forwarding</em>, <em>Reenvío de puertos</em> o <em>NAT</em>.</li>
+                    <li id="manual-port-line">Crea una regla para el puerto indicado.</li>
+                    <li>Asigna la IP local de este PC como destino.</li>
+                    <li>Comprueba que el firewall de Windows permita Java o el servidor Bedrock.</li>
+                  </ol>
+                  <p class="hint" id="manual-protocols"></p>
+                </div>
+              </details>
+            </div>
+
+            <!-- AJUSTES DEL SERVIDOR -->
+            <div class="panel" data-panel="settings">
+              <div class="panel-head">
+                <div>
+                  <h2>Ajustes del servidor</h2>
+                  <p class="hint">Nombre, puerto, memoria y ejecutable de Java.</p>
+                </div>
+              </div>
+
+              <div id="settings-warning" class="notice hidden">El servidor está en ejecución. Deténlo para cambiar el puerto, el MOTD o el modo online.</div>
+
+              <div class="form-grid">
+                <label class="field">
+                  <span>Nombre</span>
+                  <input id="set-name" type="text" maxlength="60" />
+                </label>
+                <label class="field">
+                  <span>Puerto</span>
+                  <input id="set-port" type="number" min="1" max="65535" />
+                </label>
+                <label class="field" id="set-ram-field">
+                  <span>Memoria RAM (MB)</span>
+                  <input id="set-ram" type="number" min="512" max="65536" step="256" />
+                </label>
+                <label class="field">
+                  <span>Ejecutable de Java</span>
+                  <div class="input-row">
+                    <select id="set-java"></select>
+                    <button id="btn-pick-java" class="btn btn-ghost btn-sm" title="Elegir otro ejecutable">…</button>
+                  </div>
+                </label>
+                <label class="field">
+                  <span>MOTD / nombre visible</span>
+                  <input id="set-motd" type="text" maxlength="120" />
+                </label>
+                <label class="field checkbox-field">
+                  <span>Opciones</span>
+                  <label class="check-inline"><input id="set-online" type="checkbox" /> Verificar cuentas (online-mode)</label>
+                </label>
+              </div>
+              <div class="row-actions end">
+                <button id="btn-save-settings" class="btn btn-primary">Guardar ajustes</button>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Software y versión</h3>
+                  <span class="badge" id="set-software-badge">—</span>
+                </div>
+                <p class="hint">Cambiar de versión reinstala el servidor. El mundo se conserva, pero las versiones nuevas no siempre abren mundos antiguos: haz una copia antes.</p>
+                <div class="input-row">
+                  <select id="set-version"></select>
+                  <button id="btn-reinstall" class="btn btn-warn btn-sm">Reinstalar / actualizar</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Mundo / Partida</h3>
+                </div>
+                <p class="hint">Sube una carpeta de mundo o un archivo ZIP/MCWorld existente para este servidor de Bedrock.</p>
+                <div class="row-actions">
+                  <button id="btn-upload-world" class="btn btn-primary btn-sm">📁 Subir mundo / partida</button>
+                </div>
+              </div>
+
+              <div class="card danger-card">
+                <div class="card-head">
+                  <h3>Zona peligrosa</h3>
+                </div>
+                <p class="hint">Elimina el servidor de CraftPanel. Puedes conservar los archivos del mundo en disco.</p>
+                <label class="check-inline"><input id="set-delete-files" type="checkbox" checked /> Borrar también la carpeta y los mundos</label>
+                <div class="row-actions">
+                  <button id="btn-delete-server" class="btn btn-danger btn-sm">Eliminar servidor</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="modal-root"></div>
+    <div id="toasts" class="toasts"></div>
+
+    <div id="progress-overlay" class="overlay hidden">
+      <div class="progress-card">
+        <h3 id="progress-title">Creando servidor…</h3>
+        <p id="progress-message">Preparando…</p>
+        <div class="bar"><div id="progress-bar" class="bar-fill"></div></div>
+        <span id="progress-percent" class="progress-percent">0%</span>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

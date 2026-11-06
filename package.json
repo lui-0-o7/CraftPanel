@@ -1,0 +1,44 @@
+{
+  "name": "craftpanel",
+  "productName": "CraftPanel",
+  "version": "1.0.0",
+  "description": "Gestor de servidores Minecraft Java y Bedrock",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "test": "electron scripts/selftest.js",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.craftpanel.app",
+    "productName": "CraftPanel",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "CraftPanel"
+    }
+  },
+  "devDependencies": {
+    "electron": "^38.2.0",
+    "electron-builder": "^26.18.0"
+  },
+  "allowScripts": {
+    "electron@38.8.6": true
+  }
+}
