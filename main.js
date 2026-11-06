@@ -491,11 +491,17 @@ ipcMain.handle('servers:uploadWorld', async (_event, id) => {
   const targetPath = result[0];
   const stats = fs.statSync(targetPath);
 
-  const worldsDir = path.join(server.dir, 'worlds');
-  fs.mkdirSync(worldsDir, { recursive: true });
+  // El mundo de Bedrock va directamente en la raíz del servidor, no en una subcarpeta 'worlds'
+  const propsFile = path.join(server.dir, 'server.properties');
+  let levelName = 'Bedrock level'; // Valor por defecto
 
-  const worldName = 'Bedrock level';
-  const worldDest = path.join(worldsDir, worldName);
+  if (fs.existsSync(propsFile)) {
+    const propsText = fs.readFileSync(propsFile, 'utf8');
+    const match = /level-name\s*=\s*(.+)/.exec(propsText);
+    if (match) levelName = match[1].trim();
+  }
+
+  const worldDest = path.join(server.dir, levelName);
 
   try {
     if (stats.isDirectory()) {
